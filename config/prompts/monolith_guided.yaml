@@ -1,0 +1,177 @@
+# Distilled per-section instructions for the instruction-matched monolith arm
+# (`monolith_guided`). Each block is DISTILLED from its owning agent's prompt so a
+# single-call LLM receives substantive section guidance comparable to what the
+# pipeline's specialists get — isolating instruction richness from architecture.
+#
+# THREE DISTILLATION RULES (auditable — see docs/monolith_guided_distillation_method.md):
+#   R1 FAITHFUL CONTENT     keep every substantive clinical content rule (what the
+#                           section must contain, required format, key safety rules),
+#                           verbatim where short.
+#   R2 DROP PLUMBING ONLY   remove only mechanics that don't transfer to a single
+#                           prompt: citation-registry/cite-tag rules, scribe-pin
+#                           handoff mechanics, inter-agent lane no-op tokens, JSON/
+#                           AgentSnippet schema, confidence scoring, deterministic
+#                           post-pass references, HITL changelog lore. Dropping these
+#                           can only HELP the monolith — never handicap it.
+#   R3 SOURCE-MAPPED+FROZEN  every block records `source:` (owning agent YAML + line
+#                           span) so a reviewer can diff distilled vs. source. This
+#                           file is committed and NOT regenerated per run.
+#
+# STATUS: v1.0 — all 8 sections drafted from sources, PENDING EXPERT SIGN-OFF.
+# Do not cite results from monolith_guided until this file is reviewed.
+
+version: "1.0-for-review"
+
+sections:
+
+  I: |
+    # source: intensivist.yaml L124-172 (sole author of Section I)
+    Write Section I — ICU Admission Reason & Brief ICU Course — as a free-text
+    narrative. Use this template, dropping any clause that does not apply:
+      "[Age]yo [sex] with PMH [history], initially admitted [date] for [original
+      hospital admission reason], transferred to ICU [date] for [ICU admission
+      reason]. ICU course c/b [complications, if any]; included [procedures/
+      diagnostic studies, if any]. Currently [status at transfer]."
+    Rules:
+    - "c/b" means "complicated by" — reserve it for true complications (new organ
+      failure, adverse events, deteriorations, hospital-acquired infections,
+      procedure-related complications). Do NOT use "c/b" for diagnostic procedures,
+      scheduled studies, or imaging; frame those as "underwent X" / "included X
+      (finding Y)" / "Chest CT on [date] showed [...]".
+    - Do not under-use "c/b" either: a hospital-acquired complication (e.g.,
+      aspiration pneumonia on day 4) belongs under "c/b".
+    - Omit empty clauses cleanly — never write "ICU course c/b nothing significant."
+    - Direct ICU admits: collapse to "admitted to ICU [date] for [reason]."
+    - LONG-STAY patients with a ward course before the ICU: preserve the full
+      trajectory (hospital admit → ICU escalation → ICU course → current status);
+      the receiving team needs the whole arc.
+    Use only documented history and events; never invent PMH or course details.
+
+  C: |
+    # source: case_manager.yaml L? (Section C); 4-item extraction task
+    Write Section C — Code Status / Goals of Care / Point of Contact — containing
+    ONLY these four items (write "Not documented" for any you cannot find; do not
+    substitute other clinical content):
+    1. Code Status — report the most recent documented code status verbatim; keep
+       abbreviations as written ("DNR" stays "DNR"). PATIENT-SAFETY CRITICAL: do
+       NOT assert "Full Code" from absent documentation — write "Not documented".
+    2. Currently vent-dependent: [Y/N from available data].
+    3. Point of Contact / DPOA: healthcare proxy, DPOA, power of attorney, or
+       family decision-maker — name + relationship; else "DPOA: Not documented".
+    4. Goals of Care / ACP: advance-care-planning or goals-of-care discussions,
+       palliative involvement, or patient/family preferences about resuscitation,
+       escalation limits, or location of care. When present, 1–2 sentences with the
+       SPECIFIC preference and who voiced it; else "Not documented". This is for
+       clinically actionable preferences — not general family/social history.
+
+  U_unprescribing: |
+    # source: pharmacy.yaml L20-80 (critical-care pharmacist; three-field schema)
+    Act as a critical-care clinical pharmacist. Output EXACTLY three labeled fields
+    and nothing else:
+
+    "Changes to home meds:" — home medications held, stopped, dose-changed, or
+    newly started during the ICU stay vs. the documented home regimen; "None" only
+    if verified. For induction-then-maintenance regimens (e.g., amiodarone load →
+    maintenance), report BOTH phases in one statement — never only the current
+    taper/maintenance dose (the induction phase carries the severity signal).
+
+    "Anticoagulation:" with sub-lines:
+      - Active anticoagulation at transfer: [agent, dose, route, indication].
+        Route-agnostic — IV therapeutic (heparin/bivalirudin/argatroban gtt),
+        parenteral therapeutic (LMWH treatment dose), and oral therapeutic
+        (warfarin/DOAC) all count. "None active" only when explicitly verified.
+      - Home anticoagulation (status at transfer): [agent, dose, indication] —
+        held / continuing / restarted / transitioning to bridge.
+      - VTE prophylaxis at transfer: Pharmacologic [agent, dose, route] or
+        "None (contraindicated: [reason])"; Mechanical [SCDs in place / not].
+      - Antiplatelet therapy at transfer: oral agents (ASA, clopidogrel,
+        ticagrelor, prasugrel) with [agent, dose, indication, status].
+      - Transition/bridging plan: ONLY when explicitly documented; else omit.
+      Indication for every anticoag line MUST come from documented PMH / problem
+      list / diagnosis / note assessment — NEVER inferred from drug presence
+      ("on apixaban → therefore AFib" is forbidden). "not documented in available
+      data" when absent.
+
+    "Antibiotics:" — each antimicrobial with indication, start, and duration;
+    "N/A - no planned antimicrobials" if none.
+
+    Preserve every dose, rate, route, and duration exactly as in the source.
+
+  P: |
+    # source: intensivist.yaml L241-250 (sole author of Section P)
+    Write Section P — Pending Tests at Time of Transfer — as a bullet list of ONLY:
+    pending lab results not yet returned; pending imaging reports; pending culture/
+    sensitivity results; scheduled procedures not yet completed; pending consult
+    responses. If none, write "None". Do NOT list current medications, treatment
+    plans, or PT/OT recommendations — those are not pending tests.
+
+  A: |
+    # source: case_manager.yaml (palliative/SW) + therapist.yaml (rehab) + intensivist.yaml L?(three-lane merge)
+    Write Section A — Active Consultants (including Rehab) — listing the active
+    consulting services at transfer, grouped:
+    - Subspecialty consultants (medical/surgical: ID, Nephrology, Cardiology, GI,
+      Neurology, Pulmonary, Heme/Onc, Surgery, etc.).
+    - Palliative Care / Social Work, when active.
+    - Rehab: PT, OT, SLP, Wound Care, when active.
+    Report only services with documented active involvement; do not infer a consult
+    from a diagnosis. Do not make disposition recommendations here.
+
+  U_uncertainty: |
+    # source: intensivist.yaml L1576-1640 (sole author; 5-block templated structure)
+    Write Section U_uncertainty — Diagnostic Pause — about DIAGNOSTIC uncertainty
+    only (no GCS, vitals, mobility, or hemodynamic data). Use exactly these five
+    labeled blocks in order:
+      "Working diagnosis at the time of transfer: [primary diagnosis]
+       Differential includes: [ddx items, comma-separated]
+       Less likely:
+         - [Diagnosis]: based on [reasoning specific to this diagnosis]
+         - [Diagnosis]: based on [reasoning specific to this diagnosis]
+       Pending data (to confirm/exclude):
+         - [test/study] to confirm/exclude [diagnosis]"
+    Rules:
+    - Working diagnosis = the CURRENT dominant active problem the floor team must
+      refine/act on in the first 24h — NOT the original ICU admission reason and
+      NOT the first organ system in rounding order. For long-stay patients whose
+      acute issue shifted, use the current dominant problem.
+    - Order the differential by likelihood (most likely first); within equal
+      likelihood, by consequence-of-being-missed. Do not order by organ system.
+    - "Less likely" entries are atomic [Diagnosis]: [reasoning] pairs; reasoning is
+      specific to that diagnosis.
+    - Pending tests are framed as "to confirm/exclude," never as a likelihood basis.
+
+  S: |
+    # source: intensivist.yaml L360-420 (adjudicated merge of all domain agents)
+    Write Section S — Summary of Major Problems & To-Do's — in this exact format
+    (no narrative paragraphs; every line starts with # or []):
+      "#[Problem]: [one-sentence current status]"   (one line per problem)
+      "To-do list prior to transfer:"
+      "[] [specific actionable task]"                 (one line per task)
+    Priority ordering (supersedes organ-system convention): order problems by what
+    the receiving floor team is most likely to need to intervene on in the first
+    24h after transfer, weighted by acuity and trajectory; within equal acuity, by
+    reversibility / time-criticality. Organ system is only a tiebreaker. This is a
+    sign-out (I-PASS/SBAR), not an organ-system-comprehensive ICU progress note;
+    "first = most important." Do not put social history, home equipment, or patient
+    preferences here. Preserve numeric values (labs, doses, trends) exactly.
+
+  E: |
+    # source: respiratory.yaml (device/airway) + nurse.yaml (lines/drains/skin) +
+    #         orchestrator deterministic E vitals/data-review block (Section E CONTENT,
+    #         not plumbing — the pipeline's Section E carries the transfer vitals snapshot)
+    Write Section E — Exam at Transfer, Lines/Drains/Airways & Data Review —
+    including:
+    - Data Review — vital signs at transfer: report the most recent value AND the
+      lookback range (min–max) for heart rate, blood pressure / MAP, SpO2,
+      respiratory rate, and temperature — each as a number next to its label.
+    - Current vasopressor/inotrope infusion(s) with dose at transfer (or the most
+      recent dose if just discontinued); current respiratory device and settings
+      (O2 flow, FiO2, PEEP, ventilator settings) with values; difficult airway?
+      [Y/N]; tracheostomy details (type, size, cuff status) and airway devices in place.
+    - Active lines and drains (type, site, condition); lines/drains assessed for
+      removal? [Y/N]. Report only lines/drains/devices that appear in the data.
+    - Wound and skin findings: enumerate EACH wound, pressure injury, surgical
+      incision, ostomy, or skin finding with site/location, stage or type, size and
+      characteristics (L×W×D, drainage, undermining) when documented, and current
+      management (dressing, offloading, wound vac, consult follow-up). Do not
+      default to generic lines like "protect fragile skin".
+    Preserve numeric values (vital signs, settings, doses, sizes) exactly.

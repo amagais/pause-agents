@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+*.so
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Patient data — NEVER commit ──────────────────────────────────────
+# This repository must never contain protected health information (PHI)
+# or any patient-derived artifacts.
+*.parquet
+*.csv
+/data/
+/output/
+**/output/
+**/_response_backups*/
+**/response_backups*/
+
+# LangGraph API cache
+.langgraph_api/
+
+# OS
+.DS_Store
+Thumbs.db

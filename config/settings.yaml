@@ -1,0 +1,6 @@
+clif_data_dir: "/path/to/mimic-clif-parquet"
+timezone: "US/Eastern"
+llm_provider: "anthropic"
+llm_model: "claude-sonnet-4-20250514"
+llm_temperature: 0.2
+numeric_tolerance: 0.05

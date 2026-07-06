@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "icu-pause-agents"
+version = "0.1.0"
+description = "Agentic AI system for auto-generating ICU-PAUSE handoff briefs"
+requires-python = ">=3.11"
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "openai>=1.50.0",  # Also used for local models (Ollama/vLLM OpenAI-compatible API)
+    "pydantic>=2.0",
+    "pydantic-settings>=2.0",
+    "pyyaml>=6.0",
+    "polars>=1.0",
+    "clifpy>=0.1.0",
+]
+
+[project.scripts]
+icu-pause = "icu_pause.main:main"
+
+[project.optional-dependencies]
+ui = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-dotenv>=1.0",
+    "python-docx>=1.1",
+    "fpdf2>=2.8",
+]
+review = [
+    "streamlit>=1.35.0",
+    "msal>=1.28.0",
+    "azure-storage-blob>=12.20.0",
+    "scipy>=1.13.0",
+    "pandas>=2.0",
+    "python-dotenv>=1.0",
+]
+anthropic = [
+    "anthropic>=0.40.0",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+]
+all = [
+    "icu-pause-agents[ui,anthropic,dev]",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/icu_pause"]

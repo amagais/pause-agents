@@ -1,0 +1,17 @@
+[theme]
+base = "dark"
+backgroundColor = "#0A1628"
+secondaryBackgroundColor = "#132240"
+# Note: actual colors are driven by display/theme.py CSS overrides
+primaryColor = "#4DA3FF"
+textColor = "#E8ECF1"
+font = "sans serif"
+
+[server]
+headless = true
+
+[client]
+# Suppress Streamlit's auto-discovered multipage nav. The app uses a custom
+# router in app.py via st.session_state["page"]; the per-file links Streamlit
+# would inject from pages/ lead to dead pages.
+showSidebarNavigation = false

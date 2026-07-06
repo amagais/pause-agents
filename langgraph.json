@@ -1,0 +1,7 @@
+{
+  "graphs": {
+    "icu_pause": "./src/icu_pause/graph/studio.py:graph"
+  },
+  "env": ".env",
+  "dependencies": ["."]
+}
