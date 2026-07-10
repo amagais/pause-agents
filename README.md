@@ -225,7 +225,7 @@ If you use this code, please cite the accompanying preprint (details forthcoming
 
 ```bibtex
 @misc{icupause_agents,
-  title  = {ICU-PAUSE: A Multi-Agent System for ICU-to-Ward Transfer Handoff Briefs},
+  title  = {PAUSE-Agents: A Clinician-in-the-Loop Multi-Agent AI Pipeline for ICU-to-Ward Handoff Briefs},
   author = {Amagai, Saki and colleagues},
   year   = {2026},
   note   = {Preprint}
