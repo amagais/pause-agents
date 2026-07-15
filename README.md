@@ -1,4 +1,4 @@
-# ICU-PAUSE Agents
+# PAUSE Agents
 
 **A multi-agent LLM system for auto-generating structured ICU-to-ward transfer handoff briefs, with a full evaluation harness.**
 
